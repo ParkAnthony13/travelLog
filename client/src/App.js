@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {navigate, Router, Link} from '@reach/router'
+import Button from '@mui/material/Button';
+
+
 
 import {
     GoogleMap,
@@ -33,13 +36,6 @@ import './App.css';
 import mapStyles from './mapStyles';
 
 
-
-
-
-
-
-
-
 const libraries = ["places"];
 const mapContainerStyle = {
     width: "65vw",
@@ -55,13 +51,6 @@ const options={
     disableDefaultUI: true,
     zoomControl: true,
 }
-
-
-
-
-
-
-
 
 
 function App() {
@@ -110,8 +99,17 @@ function App() {
 
     if (loadError) return "Error loading Maps"
     if (!isLoaded) return "Loading Maps";
-    
 
+    const nav = (link) => {
+        navigate('/'+link);
+    }
+
+    const removeMarker = (array,index) => {
+        markers.splice(index,1);
+        for (let mark of markers) {
+            console.log(mark);
+        }
+    }
 
     return (
         <div className="main">
@@ -124,27 +122,53 @@ function App() {
                     <Link to="/account" className="linkWhite">Account</Link>
                 </div>
             </div>
-            <Router>
-                <Home path="/home"/>
-            </Router>
             <div className="content">
                 <div className="contentLeft">
-                    <h4>Add New Marker</h4>
-                    <CreateLog 
-                        name={name} setName={setName}
-                        lng={lng} setLng={setLng}
-                        lat={lat} setLat={setLat}
+                    <div>
+                        <Button variant="contained" 
+                            onClick={() => nav("")}
+                            sx={{
+                                margin: '10px',
+                            }}
+                            >
+                            Home
+                        </Button>
+                        <Button variant="contained" 
+                            onClick={() => nav("addmarker")}
+                            sx={{
+                                margin: '10px',
+                            }}
+                        >
+                            Add Marker
+                        </Button>
+                        <Button variant="contained" 
+                            onClick={() => nav("editmarker")}
+                            sx={{
+                                margin: '10px',
+                            }}
+                        >
+                            Edit Marker
+                        </Button>
+                    </div>
+                    <Router>
+                        <Home path="/home"/>
+                        <CreateLog 
+                                path="/addmarker"
+                                name={name} setName={setName}
+                                lng={lng} setLng={setLng}
+                                lat={lat} setLat={setLat}
 
-                    />
+                            />
+                    </Router>
                     <h4>Locations traveled</h4>
-                    {markers.map((marks) => <div>
+                    {markers.map((marks,idx) => <div>
                         <p>{marks.name}</p>
                         <p>{marks.lat}</p>
                         <p>{marks.lng}</p>
-                        <button onClick={() => panTo({
+                        <Button onClick={() => panTo({
                             lat:marks.lat,lng:marks.lng
-                        })}>test btn</button>
-                        <FocusRow panTo={panTo}/>
+                        })}>Focus {idx}</Button>
+                        <Button onClick={() => removeMarker(markers,idx)}>Delete {idx}</Button>
                     </div>)}
                     <div>
                         {
@@ -180,7 +204,7 @@ function App() {
                         onLoad={onMapLoad}
                     >
                         {
-                            markers.map((marker) =>
+                            markers.map((marker,idx) =>
                                 <Marker 
                                     key={marker.time.toISOString()} 
                                     position={{ lat: marker.lat, lng: marker.lng }}

@@ -9,8 +9,6 @@ const Home = props => {
 
     return (
         <div className="content">
-            <p>home content</p>
-            
         </div>
     )
 }

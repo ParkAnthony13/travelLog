@@ -9,7 +9,7 @@ const CreateLog = props => {
 
     return (
         <div className="">
-            <p>create content</p>
+            <h4>Add New Marker</h4>
             <div>
                 <form>
                     <p style={{display:'flex',flexDirection:"column"}}>
