@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import {navigate, Router, Link} from '@reach/router'
+import {navigate, Router, Link} from '@reach/router';
 import Button from '@mui/material/Button';
+import axios from 'axios';
 
 
 
@@ -9,6 +10,7 @@ import {
     useLoadScript,
     Marker,
     InfoWindow,
+    Polyline,
 } from "@react-google-maps/api";
 
 
@@ -63,26 +65,73 @@ function App() {
     const [markers, setMarkers] = React.useState([]);
     const [selected, setSelected] = React.useState(null);
     
-    useEffect( () => {
-            markers.map((marks) => console.log("mark"));
-        },[markers])
-
+    
     const [name,setName] = useState("");
     const [lat,setLat] = useState("");
     const [lng,setLng] = useState("");
     const [travelDate,setTravelDate] = useState("");
     const [searchAddress,setSearchAddress] = useState("");
+    
+    const [dbmarkers,setDbmarkers] = useState([]);
+    const [singleMark,setSingleMark] = useState({})
+    
+    const [errorList,setErrorList] = useState([])
 
+    // polyline test
+    const [testLine,setTestLine] = useState([
+        {
+            name: "center",
+            isHome: "y",
+            lat: 0,
+            lng: 0,
+        },
+        {
+            name: "center",
+            isHome: "y",
+            lat: 11,
+            lng: 11,
+        }
+    ]);
+    
+    useEffect( () => {
+            axios.post("http://localhost:8000/api/log",singleMark)
+                .then(res => {
+                    console.log(res)
+                })
+                .catch(err => {
+                    console.log(err.response.data)
+                    const {errors} = err.response.data
+                    setErrorList(errors)
+                })
+            axios.get("http://localhost:8000/api/log")
+                .then(res => {
+                    setDbmarkers(res.data.allLogs)
+                })
+                .catch(err => {
+                    console.log(err.response)
+                })
+        },[singleMark])
 
     const onMapClick = React.useCallback((event) => {
         setMarkers(current => [...current,
             {
                 name: "Marker",
+                isHome: "n",
                 lat: event.latLng.lat(),
                 lng: event.latLng.lng(),
                 time: new Date(),
+                searchAddress: "",
             },
         ]);
+        console.log("mapClick")
+        setSingleMark({
+            name: "Marker",
+            isHome: "n",
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng(),
+            time: new Date(),
+            searchAddress: "",
+        })
     }, []);
 
     const mapRef = React.useRef();
@@ -110,6 +159,8 @@ function App() {
             console.log(mark);
         }
     }
+
+
 
     return (
         <div className="main">
@@ -160,35 +211,29 @@ function App() {
 
                             />
                     </Router>
-                    <h4>Locations traveled</h4>
-                    {markers.map((marks,idx) => <div>
-                        <p>{marks.name}</p>
-                        <p>{marks.lat}</p>
-                        <p>{marks.lng}</p>
-                        <Button onClick={() => panTo({
-                            lat:marks.lat,lng:marks.lng
-                        })}>Focus {idx}</Button>
-                        <Button onClick={() => removeMarker(markers,idx)}>Delete {idx}</Button>
-                    </div>)}
                     <div>
-                        {
-                            markers.map((marker) =>
-                                <Marker 
-                                    key={marker.time.toISOString()} 
-                                    position={{ lat: marker.lat, lng: marker.lng }}
-                                    icon={{
-                                        url: '/mug.svg',
-                                        scaledSize: new window.google.maps.Size(20,20),
-                                        origin: new window.google.maps.Point(0,0),
-                                        anchor: new window.google.maps.Point(10,10),
-                                    }}
-                                    onClick={() => {
-                                        setSelected(marker);
-                                    }}
-                                />
-                            )
-                        }
+                        <h4>Locations traveled</h4>
+                        {markers.map((marks,idx) => <div>
+                            <p>{marks.name}</p>
+                            <p>{marks.lat}</p>
+                            <p>{marks.lng}</p>
+                            <Button onClick={() => panTo({
+                                lat:marks.lat,lng:marks.lng
+                            })}>Focus {idx}</Button>
+                            <Button onClick={() => removeMarker(markers,idx)}>Delete {idx}</Button>
+                        </div>)}
+                        <h4>DB Locations</h4>
+                        {dbmarkers.map((marks,idx) => <div>
+                            <p>{marks.name}</p>
+                            <p>{marks.lat}</p>
+                            <p>{marks.lng}</p>
+                            <Button onClick={() => panTo({
+                                lat:marks.lat,lng:marks.lng
+                            })}>Focus {idx}</Button>
+                            <Button onClick={() => removeMarker(markers,idx)}>Delete {idx}</Button>
+                        </div>)}
                     </div>
+                    
 
                 </div>
                 <div className="contentRight">
@@ -203,10 +248,10 @@ function App() {
                         onClick={onMapClick}
                         onLoad={onMapLoad}
                     >
-                        {
-                            markers.map((marker,idx) =>
+                        { // database markers
+                            dbmarkers.map((marker,idx) =>
                                 <Marker 
-                                    key={marker.time.toISOString()} 
+                                    key={marker.time} // key={marker.time.toISOString()}
                                     position={{ lat: marker.lat, lng: marker.lng }}
                                     icon={{
                                         url: '/mug.svg',
@@ -220,6 +265,33 @@ function App() {
                                 />
                             )
                         }
+                        { // markers from clicking only
+                            markers.map((marker,idx) =>
+                                <Marker 
+                                    key={marker.time} // key={marker.time.toISOString()}
+                                    position={{ lat: marker.lat, lng: marker.lng }}
+                                    icon={{
+                                        url: '/mug.svg',
+                                        scaledSize: new window.google.maps.Size(20,20),
+                                        origin: new window.google.maps.Point(0,0),
+                                        anchor: new window.google.maps.Point(10,10),
+                                    }}
+                                    onClick={() => {
+                                        setSelected(marker);
+                                    }}
+                                />
+                            )
+                        }
+                        <Polyline
+                            path={testLine}
+                            geodesic={true}
+                            options={{
+                                strokeColor: "#ff2527",
+                                strokeOpacity: 0.75,
+                                strokeWeight: 2,
+
+                            }}
+                        />
                         {selected ? (
                         <InfoWindow position={{lat: selected.lat, lng: selected.lng}} onCloseClick={() =>{setSelected(null);}}>
                             <div>
